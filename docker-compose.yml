@@ -1,0 +1,35 @@
+version: "3.4"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: factcheck-postgres
+    environment:
+      POSTGRES_DB: factcheck_local
+      POSTGRES_USER: factuser
+      POSTGRES_PASSWORD: factpass
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  weaviate:
+    image: semitechnologies/weaviate:1.24.10
+    container_name: factcheck-weaviate
+    restart: always
+    ports:
+      - "8081:8080"
+    environment:
+      QUERY_DEFAULTS_LIMIT: 20
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      DEFAULT_VECTORIZER_MODULE: "none"
+      ENABLE_MODULES: ""
+      CLUSTER_HOSTNAME: "node1"
+    volumes:
+      - weaviate-data:/var/lib/weaviate
+
+volumes:
+  postgres_data:
+  weaviate-data:

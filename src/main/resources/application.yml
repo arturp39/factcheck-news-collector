@@ -1,0 +1,44 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.jdbc.time_zone: UTC
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+
+weaviate:
+  base-url: ${WEAVIATE_BASE_URL}
+  api-key: ${WEAVIATE_API_KEY:}
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: factcheck-news-collector
+
+nlp-service:
+  url: ${NLP_SERVICE_URL:http://localhost:8000}
+
+ingestion:
+  max-parallel-sources: 1
+  interval-ms: 600000
+
+crawler:
+  user-agent: FactCheckCollector/1.0 (+https://example.com)
