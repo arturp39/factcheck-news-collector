@@ -1,12 +1,13 @@
 server:
-  port: ${PORT:8081}
+  port: ${SERVER_PORT:8081}
 
 spring:
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
       ddl-auto: validate
@@ -21,7 +22,6 @@ spring:
 
 weaviate:
   base-url: ${WEAVIATE_BASE_URL}
-  api-key: ${WEAVIATE_API_KEY:}
 
 management:
   endpoints:
@@ -40,8 +40,8 @@ nlp-service:
   url: ${NLP_SERVICE_URL:http://localhost:8000}
 
 ingestion:
-  max-parallel-sources: 1
-  interval-ms: 600000
+  max-parallel-sources: ${INGESTION_MAX_PARALLEL_SOURCES:1}
+  interval-ms: ${INGESTION_INTERVAL_MS:600000}
 
 crawler:
-  user-agent: FactCheckCollector/1.0 (+https://example.com)
+  user-agent: ${CRAWLER_USER_AGENT:FactCheckCollector/1.0 (+https://example.com)}

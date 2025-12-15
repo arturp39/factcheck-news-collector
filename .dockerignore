@@ -1,6 +1,9 @@
 target
 .idea
 .vscode
+.mvn
+mvnw
+mvnw.cmd
 *.iml
 .git
 .gitignore
