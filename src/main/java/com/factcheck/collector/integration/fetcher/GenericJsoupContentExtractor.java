@@ -7,6 +7,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.net.SocketTimeoutException;
@@ -22,9 +23,10 @@ import java.util.Set;
 public class GenericJsoupContentExtractor implements ArticleContentExtractor {
 
     private static final int TIMEOUT_MS = (int) Duration.ofSeconds(10).toMillis();
-    private static final String USER_AGENT = "FactCheckCollector/1.0 (+https://example.com)";
 
     private final RobotsService robotsService;
+    @Value("${crawler.user-agent:FactCheckCollector/1.0 (+https://example.com)}")
+    private String userAgent;
 
     @Override
     public String extractMainText(String url) {
@@ -35,7 +37,7 @@ public class GenericJsoupContentExtractor implements ArticleContentExtractor {
 
         try {
             Document doc = Jsoup.connect(url)
-                    .userAgent(USER_AGENT)
+                    .userAgent(userAgent)
                     .timeout(TIMEOUT_MS)
                     .followRedirects(true)
                     .get();

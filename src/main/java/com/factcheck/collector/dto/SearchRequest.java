@@ -3,7 +3,6 @@ package com.factcheck.collector.dto;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,7 +13,6 @@ import java.util.List;
 public class SearchRequest {
 
     @NotNull
-    @Size(min = 768, max = 768, message = "Embedding must be 768-dimensional")
     private List<Double> embedding;
 
     @Min(1)

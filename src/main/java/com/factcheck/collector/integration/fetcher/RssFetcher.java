@@ -9,6 +9,7 @@ import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
@@ -27,6 +28,8 @@ import java.util.List;
 public class RssFetcher implements SourceFetcher {
 
     private final ArticleContentExtractor contentExtractor;
+    @Value("${crawler.user-agent:FactCheckCollector/1.0 (+https://example.com)}")
+    private String userAgent;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
@@ -40,7 +43,7 @@ public class RssFetcher implements SourceFetcher {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(source.getUrl()))
                     .GET()
-                    .header("User-Agent", "FactCheckCollector/1.0")
+                    .header("User-Agent", userAgent)
                     .build();
 
             HttpResponse<InputStream> response =
