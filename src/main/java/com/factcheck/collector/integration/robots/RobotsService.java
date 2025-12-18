@@ -55,6 +55,7 @@ public class RobotsService {
 
             String key = scheme + "://" + host;
 
+            // Cache robots.txt per host to avoid hammering sites
             BaseRobotRules rules = rulesCache.computeIfAbsent(key, this::fetchRulesForHost);
 
             return rules.isAllowed(url);

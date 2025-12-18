@@ -19,6 +19,7 @@ public class EmbeddingService {
     public List<List<Double>> embedChunks(List<String> chunks, String correlationId) {
         log.info("Requesting embeddings for {} chunks, correlationId={}", chunks.size(), correlationId);
 
+        // Keep the same correlation id so downstream NLP logs can be correlated
         EmbedRequest req = new EmbedRequest();
         req.setTexts(chunks);
         req.setCorrelationId(correlationId);

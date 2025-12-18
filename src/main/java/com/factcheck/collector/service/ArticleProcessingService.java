@@ -19,6 +19,7 @@ public class ArticleProcessingService {
 
     public List<String> createChunks(Article article, String fullText, String correlationId) {
         log.info("Processing article id={} correlationId={}", article.getId(), correlationId);
+        // Ask NLP service to split into cleaned sentences before chunking for embeddings
         PreprocessResponse response = nlpClient.preprocess(fullText, correlationId);
         List<String> sentences = response.getSentences();
         return ChunkingUtils.chunkSentences(sentences);

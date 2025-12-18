@@ -121,4 +121,32 @@ class InternalArticleControllerTest {
 
         verify(articleContentService).getArticleContent(1L);
     }
+
+    @Test
+    void getArticle_returnsBadRequestWhenMissing() throws Exception {
+        when(articleRepository.findById(99L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/internal/articles/{id}", 99L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void search_returnsBadRequestForWrongEmbeddingSize() throws Exception {
+        String payload = """
+                {
+                  "embedding": [0.1, 0.2],
+                  "limit": 5,
+                  "minScore": 0.7
+                }
+                """;
+
+        when(articleSearchService.search(any(), any())).thenThrow(new IllegalArgumentException("Embedding must have dimension"));
+
+        mockMvc.perform(post("/internal/articles/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
 }

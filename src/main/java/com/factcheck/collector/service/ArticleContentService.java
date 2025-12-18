@@ -21,6 +21,7 @@ public class ArticleContentService {
         Article article = articleRepository.findById(articleId)
                 .orElseThrow(() -> new IllegalArgumentException("Article not found: " + articleId));
 
+        // Pull stored chunks from Weaviate to rebuild the article body
         List<String> chunks = weaviateIndexingService.getChunksForArticle(articleId);
 
         if (chunks.isEmpty()) {

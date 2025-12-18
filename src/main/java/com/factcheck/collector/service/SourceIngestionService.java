@@ -51,6 +51,7 @@ public class SourceIngestionService {
         int failed = 0;
 
         try {
+            // Choose fetcher implementation per source type (RSS, sitemap, robots, etc.)
             SourceFetcher fetcher = fetchers.stream()
                     .filter(f -> f.supports(source.getType()))
                     .findFirst()
@@ -63,6 +64,7 @@ public class SourceIngestionService {
                 final String url = raw.getExternalUrl();
 
                 try {
+                    // Skip pages that are likely videos/galleries because downstream expects text
                     if (isNonTextMediaPage(url)) {
                         log.info("Skipping non-text media page: {}", url);
                         continue;
@@ -74,6 +76,7 @@ public class SourceIngestionService {
                         continue;
                     }
 
+                    // Avoid re-ingesting same URL
                     if (articleRepository.findByExternalUrl(url).isPresent()) {
                         log.debug("Article already exists, skipping url={}", url);
                         continue;
@@ -96,6 +99,7 @@ public class SourceIngestionService {
                         continue;
                     }
 
+                    // chunk -> embed -> push to Weaviate
                     processAndIndexArticle(article, fullText, correlationId);
                     processed++;
 

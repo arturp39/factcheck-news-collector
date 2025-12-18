@@ -30,7 +30,6 @@ class NlpServiceClientTest {
         restTemplate = mock(RestTemplate.class);
         client = new NlpServiceClient(restTemplate);
 
-        // inject baseUrl value
         Field f = NlpServiceClient.class.getDeclaredField("baseUrl");
         f.setAccessible(true);
         f.set(client, "http://nlp-service");
@@ -55,7 +54,6 @@ class NlpServiceClientTest {
 
         assertThat(result.getSentences()).containsExactly("One.", "Two.");
 
-        // check that correlation id is set in header (either provided or generated)
         ArgumentCaptor<HttpEntity<PreprocessRequest>> captor = ArgumentCaptor.forClass(HttpEntity.class);
         verify(restTemplate).exchange(
                 eq("http://nlp-service/preprocess"),

@@ -29,6 +29,8 @@ public class WeaviateIndexingService {
 
     @Value("${weaviate.base-url}")
     private String baseUrl;
+    @Value("${weaviate.article-chunk-limit:512}")
+    private int articleChunkLimit;
 
     private static final String CLASS_NAME = "ArticleChunk";
 
@@ -41,6 +43,10 @@ public class WeaviateIndexingService {
 
             HttpResponse<String> resp =
                     httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+
+            if (resp.statusCode() < 200 || resp.statusCode() >= 300) {
+                throw new WeaviateException("Schema fetch failed HTTP " + resp.statusCode(), null);
+            }
 
             JsonNode root = mapper.readTree(resp.body());
             JsonNode classes = root.path("classes");
@@ -57,6 +63,7 @@ public class WeaviateIndexingService {
 
             if (!hasClass) {
                 log.info("Creating Weaviate class {}", CLASS_NAME);
+                // Minimal schema setup to let batch inserts succeed on fresh Weaviate instances
                 String body = """
                         {
                           "class": "ArticleChunk",
@@ -80,10 +87,19 @@ public class WeaviateIndexingService {
                         .POST(HttpRequest.BodyPublishers.ofString(body))
                         .build();
 
-                httpClient.send(createReq, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> createResp =
+                        httpClient.send(createReq, HttpResponse.BodyHandlers.ofString());
+
+                if (createResp.statusCode() < 200 || createResp.statusCode() >= 300) {
+                    throw new WeaviateException("Schema creation failed HTTP " + createResp.statusCode(), null);
+                }
             }
         } catch (Exception e) {
             log.error("ensureSchema() failed", e);
+            if (e instanceof WeaviateException weaviateException) {
+                throw weaviateException;
+            }
+            throw new WeaviateException("ensureSchema() failed", e);
         }
     }
 
@@ -108,6 +124,7 @@ public class WeaviateIndexingService {
             List<String> objects = new ArrayList<>();
 
             for (int i = 0; i < chunks.size(); i++) {
+                // Build a single object with properties and embedding vector
                 String vectorJson = mapper.writeValueAsString(embeddings.get(i));
 
                 String obj = """
@@ -174,6 +191,7 @@ public class WeaviateIndexingService {
             String correlationId
     ) {
         try {
+            // GraphQL nearVector search
             String gql = buildSearchQuery(embedding, limit);
 
             var root = mapper.createObjectNode();
@@ -189,6 +207,10 @@ public class WeaviateIndexingService {
 
             HttpResponse<String> resp =
                     httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+
+            if (resp.statusCode() < 200 || resp.statusCode() >= 300) {
+                throw new WeaviateException("Weaviate search HTTP " + resp.statusCode(), null);
+            }
 
             JsonNode respRoot = mapper.readTree(resp.body());
             JsonNode errors = respRoot.path("errors");
@@ -241,8 +263,6 @@ public class WeaviateIndexingService {
 
     public List<String> getChunksForArticle(long articleId) {
         try {
-            int limit = 512;
-
             String gql = String.format(
                     """
                     {
@@ -263,7 +283,7 @@ public class WeaviateIndexingService {
                     }
                     """,
                     articleId,
-                    limit
+                    articleChunkLimit
             );
 
             var root = mapper.createObjectNode();
@@ -301,6 +321,7 @@ public class WeaviateIndexingService {
                     if (text == null || text.isBlank()) {
                         continue;
                     }
+                    // Track chunk index so we can rebuild article in correct order
                     list.add(new ChunkWithIndex(idx, text));
                 }
             }
