@@ -1,16 +1,18 @@
 package com.factcheck.collector.controller;
 
-import com.factcheck.collector.service.IngestionService;
+import com.factcheck.collector.service.SourceIngestionService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -18,40 +20,48 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(IngestionController.class)
 class IngestionControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired MockMvc mockMvc;
+    @Autowired ObjectMapper objectMapper;
 
-    @MockitoBean
-    private IngestionService ingestionService;
+    @MockitoBean SourceIngestionService sourceIngestionService;
 
     @Test
-    void runIngestion_usesProvidedCorrelationId() throws Exception {
-        String correlationId = "test-cid-123";
-
-        mockMvc.perform(post("/admin/ingestion/run")
-                        .param("correlationId", correlationId))
+    void runOnce_withoutHeader_generatesUuid_andCallsService() throws Exception {
+        var res = mockMvc.perform(post("/api/ingestion/run")
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Ingestion started, correlationId=" + correlationId));
+                .andExpect(jsonPath("$.status").value("STARTED_AND_FINISHED"))
+                .andExpect(jsonPath("$.correlationId").isString())
+                .andReturn();
 
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(ingestionService).ingestAllSources(captor.capture());
-        assertThat(captor.getValue()).isEqualTo(correlationId);
+        String json = res.getResponse().getContentAsString();
+        String cid = objectMapper.readTree(json).path("correlationId").asText();
+        assertThat(UUID.fromString(cid)).isNotNull();
+
+        verify(sourceIngestionService).ingestOnce(any(UUID.class));
     }
 
     @Test
-    void runIngestion_generatesCorrelationIdIfMissing() throws Exception {
-        String body = mockMvc.perform(post("/admin/ingestion/run"))
+    void runOnce_withValidHeader_passesSameUuid() throws Exception {
+        UUID cid = UUID.randomUUID();
+
+        mockMvc.perform(post("/api/ingestion/run")
+                        .header("X-Correlation-Id", cid.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+                .andExpect(jsonPath("$.correlationId").value(cid.toString()));
 
-        String cid = body.replace("Ingestion started, correlationId=", "").trim();
-        assertThat(cid).isNotBlank();
+        verify(sourceIngestionService).ingestOnce(cid);
+    }
 
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(ingestionService).ingestAllSources(captor.capture());
-        assertThat(captor.getValue()).isEqualTo(cid);
-        UUID.fromString(cid);
+    @Test
+    void runOnce_withInvalidHeader_generatesNewUuid() throws Exception {
+        mockMvc.perform(post("/api/ingestion/run")
+                        .header("X-Correlation-Id", "not-a-uuid")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correlationId").isString());
+
+        verify(sourceIngestionService).ingestOnce(any(UUID.class));
     }
 }

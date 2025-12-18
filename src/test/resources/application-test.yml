@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+    url: "jdbc:h2:mem:collector;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;INIT=CREATE SCHEMA IF NOT EXISTS content\\;SET SCHEMA content"
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        hbm2ddl:
+          create_namespaces: true
+        default_schema: content
+
+logging:
+  level:
+    org.hibernate.SQL: warn
+    org.hibernate.tool.schema: info

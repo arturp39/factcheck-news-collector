@@ -1,20 +1,17 @@
-package com.factcheck.collector.dto;
+package com.factcheck.collector.domain.dto;
 
-import lombok.Builder;
 import lombok.Data;
 
 import java.time.Instant;
 
 @Data
-@Builder
-public class ArticleContentResponse {
-
-    private Long articleId;
+public class NewsArticleDto {
     private Long sourceId;
     private String sourceName;
-
     private String externalUrl;
     private String title;
-    private Instant publishedDate;
+    private String author;
+    private String description;
     private String content;
+    private Instant publishedAt;
 }

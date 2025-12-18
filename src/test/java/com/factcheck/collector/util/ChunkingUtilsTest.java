@@ -15,7 +15,7 @@ class ChunkingUtilsTest {
                 "Sentence 5", "Sentence 6"
         );
 
-        List<String> chunks = ChunkingUtils.chunkSentences(sentences);
+        List<String> chunks = ChunkingUtils.chunkSentences(sentences, 4, 1200);
 
         assertThat(chunks)
                 .hasSize(2)
@@ -27,7 +27,7 @@ class ChunkingUtilsTest {
 
     @Test
     void chunkSentencesHandlesEmptyInput() {
-        List<String> chunks = ChunkingUtils.chunkSentences(List.of());
+        List<String> chunks = ChunkingUtils.chunkSentences(List.of(), 4, 1200);
 
         assertThat(chunks).isEmpty();
     }

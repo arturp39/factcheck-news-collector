@@ -17,8 +17,6 @@ spring:
   sql:
     init:
       mode: never
-      schema-locations: classpath:schema.sql
-      data-locations: classpath:data.sql
 
 weaviate:
   base-url: ${WEAVIATE_BASE_URL}
@@ -40,11 +38,27 @@ nlp-service:
   url: ${NLP_SERVICE_URL:http://localhost:8000}
 
 ingestion:
-  max-parallel-sources: ${INGESTION_MAX_PARALLEL_SOURCES:1}
   interval-ms: ${INGESTION_INTERVAL_MS:600000}
+  sentences-per-chunk: ${INGESTION_SENTENCES_PER_CHUNK:4}
+  max-characters-per-chunk: ${INGESTION_MAX_CHARACTERS_PER_CHUNK:1200}
 
 crawler:
   user-agent: ${CRAWLER_USER_AGENT:FactCheckCollector/1.0 (+https://example.com)}
 
 search:
   embedding-dimension: ${SEARCH_EMBEDDING_DIMENSION:768}
+
+newsapi:
+  api-key: ${NEWSAPI_API_KEY:}
+  base-url: ${NEWSAPI_BASE_URL:https://newsapi.org/v2/top-headlines}
+  page-size: ${NEWSAPI_PAGE_SIZE:20}
+  max-pages-per-batch: ${NEWSAPI_MAX_PAGES_PER_BATCH:1}
+  max-sources-per-request: ${NEWSAPI_MAX_SOURCES_PER_REQUEST:20}
+  match-by-source-name: ${NEWSAPI_MATCH_BY_SOURCE_NAME:true}
+
+logging:
+  level:
+    com.factcheck.collector.source: INFO
+    com.factcheck.collector.integration.fetcher: DEBUG
+    com.factcheck.collector.service: INFO
+    com.factcheck.collector.source.newsapi: INFO

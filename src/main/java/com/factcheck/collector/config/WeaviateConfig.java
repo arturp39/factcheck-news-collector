@@ -15,7 +15,7 @@ public class WeaviateConfig {
 
     @PostConstruct
     public void initSchema() {
-        log.info("Initializing Weaviate schema (ArticleChunk class) if missing");
+        log.info("Ensuring Weaviate schema exists (class ArticleChunk)");
         weaviateIndexingService.ensureSchema();
     }
 }

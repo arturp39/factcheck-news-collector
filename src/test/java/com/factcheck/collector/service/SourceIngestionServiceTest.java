@@ -1,84 +1,51 @@
 package com.factcheck.collector.service;
 
-import com.factcheck.collector.domain.entity.IngestionLog;
-import com.factcheck.collector.domain.entity.Source;
-import com.factcheck.collector.domain.enums.IngestionStatus;
-import com.factcheck.collector.domain.enums.SourceType;
-import com.factcheck.collector.exception.FetchException;
-import com.factcheck.collector.integration.fetcher.SourceFetcher;
-import com.factcheck.collector.repository.ArticleRepository;
-import com.factcheck.collector.repository.IngestionLogRepository;
-import com.factcheck.collector.repository.SourceRepository;
+import com.factcheck.collector.domain.dto.NewsArticleDto;
+import com.factcheck.collector.processor.NewsProcessor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SourceIngestionServiceTest {
 
-    @Mock
-    private SourceRepository sourceRepository;
-
-    @Mock
-    private ArticleRepository articleRepository;
-
-    @Mock
-    private IngestionLogRepository ingestionLogRepository;
-
-    @Mock
-    private ArticleProcessingService articleProcessingService;
-
-    @Mock
-    private EmbeddingService embeddingService;
-
-    @Mock
-    private WeaviateIndexingService weaviateIndexingService;
-
-    @Mock
-    private SourceFetcher fetcher;
+    @Mock NewsProcessor newsProcessor;
+    @Mock ArticleIngestionPipeline pipeline;
+    @Mock IngestionLogService ingestionLogService;
 
     @Test
-    void ingestSingleSourceRecordsFetchFailure() throws FetchException {
-        Source source = Source.builder()
-                .id(7L)
-                .name("Fetch Failure Source")
-                .type(SourceType.RSS)
-                .url("https://example.com/rss")
-                .build();
+    void ingestOnce_happyPath_callsSuccess() {
+        SourceIngestionService s = new SourceIngestionService(newsProcessor, pipeline, ingestionLogService);
+        UUID cid = UUID.randomUUID();
 
-        when(fetcher.supports(SourceType.RSS)).thenReturn(true);
-        when(fetcher.fetch(source)).thenThrow(new FetchException("boom"));
+        when(ingestionLogService.start(eq(cid), any(Instant.class))).thenReturn(123L);
+        when(newsProcessor.process()).thenReturn(List.of(new NewsArticleDto()));
+        when(pipeline.ingestAll(anyList(), eq(cid))).thenReturn(1);
 
-        SourceIngestionService ingestionService = new SourceIngestionService(
-                sourceRepository,
-                articleRepository,
-                ingestionLogRepository,
-                List.of(fetcher),
-                articleProcessingService,
-                embeddingService,
-                weaviateIndexingService
-        );
+        s.ingestOnce(cid);
 
-        ingestionService.ingestSingleSource(source, "corr-fail");
+        verify(ingestionLogService).success(eq(123L), any(Instant.class), eq(1), eq(1));
+        verify(ingestionLogService, never()).fail(any(), any(), any());
+    }
 
-        ArgumentCaptor<IngestionLog> logCaptor = ArgumentCaptor.forClass(IngestionLog.class);
-        verify(ingestionLogRepository, atLeastOnce()).save(logCaptor.capture());
+    @Test
+    void ingestOnce_failure_callsFailAndRethrows() {
+        SourceIngestionService s = new SourceIngestionService(newsProcessor, pipeline, ingestionLogService);
+        UUID cid = UUID.randomUUID();
 
-        IngestionLog finalLog = logCaptor.getAllValues().getLast();
-        assertThat(finalLog.getStatus()).isEqualTo(IngestionStatus.FAILED);
-        assertThat(finalLog.getErrorDetails()).contains("Fetch error: boom");
-        assertThat(finalLog.getCorrelationId()).isEqualTo("corr-fail");
+        when(ingestionLogService.start(eq(cid), any(Instant.class))).thenReturn(123L);
+        when(newsProcessor.process()).thenThrow(new RuntimeException("boom"));
 
-        verifyNoInteractions(articleRepository, articleProcessingService, embeddingService, weaviateIndexingService);
+        assertThrows(RuntimeException.class, () -> s.ingestOnce(cid));
+
+        verify(ingestionLogService).fail(eq(cid), any(Instant.class), any(Exception.class));
     }
 }

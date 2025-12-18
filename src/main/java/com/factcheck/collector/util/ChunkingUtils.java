@@ -8,21 +8,29 @@ import java.util.List;
 @UtilityClass
 public class ChunkingUtils {
 
-    private static final int DEFAULT_SENTENCES_PER_CHUNK = 4;
-
-    public List<String> chunkSentences(List<String> sentences) {
+    public List<String> chunkSentences(
+            List<String> sentences,
+            int sentencesPerChunk,
+            int maxCharactersPerChunk
+    ) {
         List<String> chunks = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         int count = 0;
 
         for (String s : sentences) {
+            if (s == null || s.isBlank()) {
+                continue;
+            }
             if (count > 0) {
                 current.append(" ");
             }
             current.append(s);
             count++;
 
-            if (count >= DEFAULT_SENTENCES_PER_CHUNK) {
+            boolean sentenceLimitReached = count >= sentencesPerChunk;
+            boolean sizeLimitReached = current.length() >= maxCharactersPerChunk;
+
+            if (sentenceLimitReached || sizeLimitReached) {
                 chunks.add(current.toString());
                 current.setLength(0);
                 count = 0;

@@ -1,19 +1,24 @@
-package com.factcheck.collector.dto;
+package com.factcheck.collector.domain.dto;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ChunkResult {
     private String text;
-    private Long articleId;
+
+    private long articleId;
     private String articleUrl;
     private String articleTitle;
+
     private String sourceName;
     private LocalDateTime publishedDate;
-    private Integer chunkIndex;
-    private Float score;
+
+    private int chunkIndex;
+
+    private float score;
 }

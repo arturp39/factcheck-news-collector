@@ -19,6 +19,10 @@ public class Source {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "outlet_id")
+    private Outlet outlet;
+
     @Column(nullable = false, length = 255)
     private String name;
 
@@ -29,17 +33,16 @@ public class Source {
     @Column(nullable = false, columnDefinition = "text")
     private String url;
 
-    @Column(nullable = false, length = 100)
     @Builder.Default
+    @Column(nullable = false, length = 100)
     private String category = "general";
 
-    @Column(nullable = false)
     @Builder.Default
+    @Column(nullable = false)
     private boolean enabled = true;
 
-    @Column(name = "reliability_score", nullable = false)
-    @Builder.Default
-    private double reliabilityScore = 0.50;
+    @Column(name = "reliability_score")
+    private Double reliabilityScore;
 
     @Column(name = "last_fetched_at")
     private Instant lastFetchedAt;
