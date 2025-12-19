@@ -1,18 +1,17 @@
 package com.factcheck.collector.controller;
 
-import com.factcheck.collector.domain.entity.Source;
 import com.factcheck.collector.domain.enums.SourceType;
-import com.factcheck.collector.repository.SourceRepository;
+import com.factcheck.collector.dto.SourceResponse;
+import com.factcheck.collector.service.SourceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -27,22 +26,16 @@ class SourceAdminControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private SourceRepository sourceRepository;
+    private SourceService sourceService;
 
     @Test
     void listSources_returnsSources() throws Exception {
-        Source s = Source.builder()
-                .id(1L)
-                .name("BBC")
-                .type(SourceType.RSS)
-                .url("https://example.com/rss")
-                .category("top")
-                .enabled(true)
-                .reliabilityScore(0.85)
-                .build();
+        SourceResponse s = new SourceResponse(
+                1L, "BBC", SourceType.RSS, "https://example.com/rss", "top",
+                true, 0.85, Instant.now(), Instant.now(), 0, Instant.now(), Instant.now()
+        );
 
-        when(sourceRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "id")))
-                .thenReturn(List.of(s));
+        when(sourceService.listSources()).thenReturn(List.of(s));
 
         mockMvc.perform(get("/admin/sources"))
                 .andExpect(status().isOk())
@@ -52,17 +45,12 @@ class SourceAdminControllerTest {
 
     @Test
     void createSource_createsSource() throws Exception {
-        Source saved = Source.builder()
-                .id(2L)
-                .name("NPR")
-                .type(SourceType.RSS)
-                .url("https://npr.org/rss")
-                .category("top")
-                .enabled(true)
-                .reliabilityScore(0.8)
-                .build();
+        SourceResponse saved = new SourceResponse(
+                2L, "NPR", SourceType.RSS, "https://npr.org/rss", "top",
+                true, 0.8, Instant.now(), Instant.now(), 0, Instant.now(), Instant.now()
+        );
 
-        when(sourceRepository.save(org.mockito.ArgumentMatchers.any(Source.class))).thenReturn(saved);
+        when(sourceService.createSource(org.mockito.ArgumentMatchers.any())).thenReturn(saved);
 
         String payload = """
                 {
@@ -85,18 +73,13 @@ class SourceAdminControllerTest {
 
     @Test
     void updateSource_updatesFields() throws Exception {
-        Source existing = Source.builder()
-                .id(3L)
-                .name("Old")
-                .type(SourceType.RSS)
-                .url("https://old")
-                .category("old")
-                .enabled(true)
-                .reliabilityScore(0.5)
-                .build();
+        SourceResponse updated = new SourceResponse(
+                3L, "Old", SourceType.RSS, "https://old", "new",
+                false, 0.5, Instant.now(), Instant.now(), 0, Instant.now(), Instant.now()
+        );
 
-        when(sourceRepository.findById(3L)).thenReturn(Optional.of(existing));
-        when(sourceRepository.save(existing)).thenReturn(existing);
+        when(sourceService.updateSource(org.mockito.ArgumentMatchers.eq(3L), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(updated);
 
         String payload = """
                 { "enabled": false, "category": "new" }
@@ -108,8 +91,5 @@ class SourceAdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(false))
                 .andExpect(jsonPath("$.category").value("new"));
-
-        verify(sourceRepository).save(existing);
     }
 }
-
