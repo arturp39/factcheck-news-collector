@@ -4,6 +4,7 @@ import com.factcheck.collector.domain.entity.Source;
 import com.factcheck.collector.repository.SourceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -54,5 +55,15 @@ public class IngestionService {
         }
 
         log.info("Ingestion run finished, correlationId={}", correlationId);
+    }
+
+    public void ingestSource(Long sourceId, String correlationId) {
+        Source source = sourceRepository.findById(sourceId)
+                .orElseThrow(() -> new EmptyResultDataAccessException("Source not found: " + sourceId, 1));
+
+        log.info("Starting ingestion for sourceId={} name={} correlationId={}",
+                source.getId(), source.getName(), correlationId);
+
+        sourceIngestionService.ingestSingleSource(source, correlationId);
     }
 }
